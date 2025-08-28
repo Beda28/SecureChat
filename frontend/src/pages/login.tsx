@@ -58,7 +58,7 @@ const Index = () => {
     return <>
         <BackgroundA>
             <LoginBox>
-                <LoginTitle>Aegis Chat</LoginTitle>
+                <LoginTitle>Secure Chat</LoginTitle>
                 <CheckBox>
                     <CheckP $active={login} onClick={() => changeLogin(true)}>로그인</CheckP>
                     <CheckP $active={!login} onClick={() => changeLogin(false)}>회원가입</CheckP>
