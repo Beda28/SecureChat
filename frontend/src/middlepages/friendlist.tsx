@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { ListItemFromUser, UserTitle } from "../components/Box/UserList";
 import { ListName } from "../components/Text/Friend";
 import { AddUserBox, FriendBox, FriendBoxInfo, SubmitList } from "../components/Box/Friend";
@@ -11,6 +11,11 @@ import { getId } from "../utils/token";
 
 interface Childprops {
     uuid: string;
+    setFriendList: React.Dispatch<React.SetStateAction<string[]>>
+}
+
+interface UserListProps {
+    uuid: string;
 }
 
 interface FriendRequest {
@@ -18,7 +23,7 @@ interface FriendRequest {
     type: 'sent' | 'receive';
 }
 
-export const FriendList: React.FC<Childprops> = ({uuid}) => {
+export const FriendList: React.FC<UserListProps> = ({uuid}) => {
     const [friend, setfriend] = useState<string[]>([]);
 
     useEffect(() => {
@@ -58,10 +63,17 @@ export const FriendList: React.FC<Childprops> = ({uuid}) => {
     </>
 }
 
-export const AddFriend: React.FC<Childprops> = ({uuid}) => {
+export const AddFriend: React.FC<Childprops> = ({uuid, setFriendList}) => {
     const [idsearch, setidsearch] = useState('')
     const [resultuser, setresultuser] = useState<string[]>([]);
     const [resultsend, setresultsend] = useState<string[]>([]);
+    
+    const getList = async () => {
+        const res = await axios.post('/api/friend/getlist', {
+            user_id: getId('uuid')
+        })
+        if (res.data) setFriendList(res.data)
+    }
 
     const cancel = async (send_id:string) => {
         try{
@@ -96,6 +108,7 @@ export const AddFriend: React.FC<Childprops> = ({uuid}) => {
                 submit_id: send_id
             })
             alert(res.data.message)
+            getList()
             fl()
         }catch(e){
             console.log(e)

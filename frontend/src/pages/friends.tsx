@@ -67,21 +67,6 @@ const Friends = () => {
         setserverlist(res.data)
     }
 
-    const lookList = () => {
-        return <>
-            {
-                listfriend.map((value) => {
-                    return (
-                        <UserListItem active={focususer == value} onClick={() => {setfriend('chat'); setsayback(value); changefocus(value)}}>
-                            <UserListTitle></UserListTitle>
-                            <Name>{value}</Name>
-                        </UserListItem>
-                    )
-                })
-            }
-        </>
-    }
-
     const changefocus = (id: string) => {
         setfocususer(id)
     }
@@ -109,7 +94,16 @@ const Friends = () => {
                 <TitleBox>
                     <SearchFriend>대화 찾기</SearchFriend>
                 </TitleBox>
-                <ChatUserList><Def onClick={() => {changefocus(''); setfriend('list')}} active={focususer == ''}>친구</Def><Line></Line>{lookList()}</ChatUserList> 
+                <ChatUserList><Def onClick={() => {changefocus(''); setfriend('list')}} active={focususer == ''}>친구</Def><Line></Line>
+                {listfriend.map((value) => {
+                    return (
+                        <UserListItem active={focususer == value} onClick={() => {setfriend('chat'); setsayback(value); changefocus(value)}}>
+                            <UserListTitle></UserListTitle>
+                            <Name>{value}</Name>
+                        </UserListItem>
+                    )
+                })}
+                </ChatUserList> 
                 <UserInfo>
                     <UserTitle></UserTitle>
                     <Name>{getId('id')}</Name>
@@ -122,7 +116,7 @@ const Friends = () => {
                     {(friend != "chat") ? ((friend == "list") ? <SearchButtonA>모두</SearchButtonA> : <SearchButtonB onClick={changeFriend}>모두</SearchButtonB>) : <></>}
                     {(friend != "chat") ? ((friend == "list") ? <SearchButtonB onClick={changeFriend}>친구찾기</SearchButtonB> : <SearchButtonA>친구찾기</SearchButtonA>) : <></>}
                 </ChatTop>
-                {(friend == "chat") ? <ChatList uuid={getId('uuid')} id={getId('id')} user_id={sayback}></ChatList> : ((friend == "list") ? <FriendList uuid={getId('uuid')}></FriendList> : <AddFriend uuid={getId('uuid')}></AddFriend>)}
+                {(friend == "chat") ? <ChatList uuid={getId('uuid')} id={getId('id')} user_id={sayback}></ChatList> : ((friend == "list") ? <FriendList uuid={getId('uuid')}></FriendList> : <AddFriend setFriendList={setlistfriend} uuid={getId('uuid')}></AddFriend>)}
             </ChatBox>
             <InfoBox>
                 <InfoTop></InfoTop>
