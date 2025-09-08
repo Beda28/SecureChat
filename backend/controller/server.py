@@ -3,6 +3,8 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.mysql import model, engine
 from uuid import uuid4
+from db.redis import redis as redi
+import redis.asyncio
 
 async def firstconnection(uuid: str, db: AsyncSession = Depends(engine.get_db)):
     room_id = await db.execute(select(model.Server.server_name)
@@ -11,14 +13,25 @@ async def firstconnection(uuid: str, db: AsyncSession = Depends(engine.get_db)):
     room_list = room_id.scalars().all()
     return room_list
 
-async def getinserver(uuid: str, db: AsyncSession = Depends(engine.get_db)):
-    server_uuid = await db.execute(select(
+async def getinserver(user_uuid: str, server: str, db: AsyncSession = Depends(engine.get_db), rds: redis = Depends(redi.get_redis_client)):
+    query_result = await db.execute(select(
         model.Server_in_Server.channel_id, 
         model.Server_in_Server.channel_uuid)
         .join(model.Server, model.Server.server_uuid == model.Server_in_Server.server_uuid)
-        .where(model.Server.server_name == uuid))
-    result = server_uuid.all()
-    return [row._asdict() for row in result]
+        .where(model.Server.server_name == server))
+    result = query_result.all()
+
+    key = f'user:channel:{user_uuid}'
+    field = server
+    rsstate = await rds.hget(key, field)
+
+    if rsstate is None:
+        if result:
+            value = result[0].channel_uuid
+            await rds.hset(key, field, value)
+            rsstate = value
+    
+    return {"channel" : [row._asdict() for row in result], "last": rsstate}
 
 async def addserver(uuid: str, servername: str, db: AsyncSession = Depends(engine.get_db)):
     server_uuid = uuid4()
@@ -73,8 +86,6 @@ async def getuserlist(id: str, db: AsyncSession = Depends(engine.get_db)):
         .where(model.Server.server_name == id))
 
         slist = state.scalars().all()
-        
-        print('로그 : ', slist)
         return slist
     
     except Exception as e:

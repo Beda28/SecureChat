@@ -27,3 +27,8 @@ class addchannel(BaseModel):
 class inviteserver(BaseModel):
     user_id: str
     server_name: str
+
+class lastchannel(BaseModel):
+    user_id: str
+    last_server: str
+    last_channel: str

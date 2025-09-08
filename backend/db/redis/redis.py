@@ -1,4 +1,3 @@
-# /app/db/db_redis.py
 import redis.asyncio as redis
 from typing import Optional
 

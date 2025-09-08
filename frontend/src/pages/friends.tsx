@@ -82,12 +82,12 @@ const Friends = () => {
         <BackgroundB>
             <ServerList>
                 <ServerItem active={currentChatServer === null} onClick={() => setCurrentChatServer(null)}><ServerItemText>SC</ServerItemText></ServerItem>
-                {
-                    serverlist.map((value:string) => {
-                        return <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} 
-                        onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
-                    })
-                }
+                {serverlist.map((value:string) => {
+                    return (
+                        <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} 
+                       onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
+                    )
+                })}
                 <ServerItem active={false} onClick={() => setUI(2)}><AddServerText>+</AddServerText></ServerItem>
             </ServerList>
             <UserList>

@@ -30,6 +30,11 @@ interface ChannelList {
     channel_uuid: string;
 }
 
+interface ChannelInfo {
+    channel: ChannelList[],
+    last: string | null;
+}
+
 const Friends = () => {
     const [chatlist, setchatlist] = useState<Message[]>([])
     const [message, setmessage] = useState('')
@@ -53,6 +58,10 @@ const Friends = () => {
         }
 
         asyncf()
+
+        return () => {
+            lastchannel()
+        }
     }, [currentChatServer])
 
     useEffect(() => {
@@ -79,8 +88,19 @@ const Friends = () => {
 
         return () => {
             if (websocket && websocket.readyState === websocket.OPEN) websocket.close()
+            lastchannel()
         }
     }, [chatserveruuid])
+
+    const lastchannel = async () => {
+        if (currentChatServer && chatserveruuid){
+            await axios.post('/api/server/backtask', {
+                user_id: getId('uuid'),
+                last_server: currentChatServer,
+                last_channel: chatserveruuid
+            })
+        }
+    }
 
     const checkState = () => {
         if (!checkExp()) navigate('/')
@@ -124,16 +144,22 @@ const Friends = () => {
     const InserverList = async() => {
         if (currentChatServer == null) return navigate('/friends')
 
-        const res = await axios.post<{ channel_id: string; channel_uuid: string }[]>('/api/server/getInserver', {
-            user_id: currentChatServer
+        const res = await axios.post<ChannelInfo>('/api/server/getInserver', {
+            user_id: getId('uuid'),
+            server_name: currentChatServer
         })
-    
-        setchannellist(res.data);
-        const items = res.data;
-            
-        setinserver(items[0].channel_id)
-        setchatserveruuid(items[0].channel_uuid)
-        
+
+        const {channel, last} = res.data;
+
+        let lastchan = last;
+        setchannellist(channel);
+
+        if (lastchan === null) lastchan = channel[0].channel_uuid
+        setchatserveruuid(lastchan);
+
+        let channel_id = channel.find(channel => channel?.channel_uuid === lastchan)?.channel_id
+        if (!channel_id) channel_id = channel[0].channel_id
+        setinserver(channel_id)
     }
     
     const invserver = (e: React.MouseEvent<HTMLDivElement>, value: string) => {
@@ -147,11 +173,12 @@ const Friends = () => {
         <BackgroundB>
             <ServerList>
                 <ServerItem active={currentChatServer === null} onClick={() => {setCurrentChatServer(null); navigate('/friends')}}><ServerItemText>SC</ServerItemText></ServerItem>
-                {
-                    serverlist.map((value:string) => {
-                        return <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
-                    })
-                }
+                {serverlist.map((value:string) => {
+                    return (
+                        <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} 
+                        onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
+                    )
+                })}
                 <ServerItem active={false} onClick={() => setUI(2)}><AddServerText>+</AddServerText></ServerItem>
             </ServerList>
             <UserList>
