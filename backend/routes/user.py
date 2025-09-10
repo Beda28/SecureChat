@@ -59,8 +59,8 @@ async def process(user_id: str, server_id: str, channel_id: str, rds: redis = De
 
 # 서버
 @router.post('/api/server/chatget')
-async def getserverchat(info: post_model.ID_Only):
-    return await friendchat.getserverchat(info.user_id)
+async def getserverchat(info: post_model.ID_Only, db:AsyncSession = Depends(engine.get_db)):
+    return await friendchat.getserverchat(info.user_id, db)
 
 @router.post('/api/server/getInserver')
 async def getinserverlist(info: post_model.inviteserver, db:AsyncSession = Depends(engine.get_db), rds: redis = Depends(rds.get_redis_client)):

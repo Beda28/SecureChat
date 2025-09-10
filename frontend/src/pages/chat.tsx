@@ -35,6 +35,11 @@ interface ChannelInfo {
     last: string | null;
 }
 
+interface ServerList {
+    server_name: string;
+    server_uuid: string;
+}
+
 const Friends = () => {
     const [chatlist, setchatlist] = useState<Message[]>([])
     const [message, setmessage] = useState('')
@@ -43,7 +48,7 @@ const Friends = () => {
     const {currentChatServer, setCurrentChatServer, 
         chatserveruuid, setchatserveruuid} = useAppContext();
     const [channellist, setchannellist] = useState<ChannelList[]>([]);
-    const [serverlist, setserverlist] = useState<string[]>([]);
+    const [serverlist, setserverlist] = useState<ServerList[]>([]);
     const [inserver, setinserver] = useState('');
     const [userlist, setuserlist] = useState<string[]>([]);
     const [UI, setUI] = useState<number>(0);
@@ -74,6 +79,7 @@ const Friends = () => {
                 })
                 const FriendList: Message[] = res.data.result;
                 setchatlist(FriendList)
+                setinserver(res.data.name)
         
                 websocket = new WebSocket(`/ws/chat/${chatserveruuid}`);
                 setWS(websocket)
@@ -92,6 +98,7 @@ const Friends = () => {
         }
     }, [chatserveruuid])
 
+    // 마지막 접속채널 저장
     const lastchannel = async () => {
         if (currentChatServer && chatserveruuid){
             await axios.post('/api/server/backtask', {
@@ -102,15 +109,18 @@ const Friends = () => {
         }
     }
 
+    // 로그인 상태확인
     const checkState = () => {
         if (!checkExp()) navigate('/')
     }
 
+    // 로그아웃
     const logout = () => {
         localStorage.removeItem("SecuerChat_Token")
         checkState()
     }
 
+    // 유저목록 불러오기
     const getuserlist = async () => {
         if (currentChatServer == null) return navigate('/friends')
 
@@ -120,13 +130,15 @@ const Friends = () => {
         if (res.data) setuserlist(res.data)
     }
 
+    // 서버목록 불러오기
     const serverList = async () => {
         const res = await axios.post('/api/server/get', {
             user_id: getId('uuid')
         })
-        if (res.data) setserverlist(res.data)
+        setserverlist(res.data)
     }
 
+    // 채팅 입력
     const handelkey = async (key: React.KeyboardEvent<HTMLInputElement>) => {
         if (key.key === 'Enter' && message !== ''){
             if (ws && ws.readyState == WebSocket.OPEN){
@@ -141,6 +153,7 @@ const Friends = () => {
         }
     }
 
+    // 채널목록 불러오기
     const InserverList = async() => {
         if (currentChatServer == null) return navigate('/friends')
 
@@ -148,7 +161,6 @@ const Friends = () => {
             user_id: getId('uuid'),
             server_name: currentChatServer
         })
-
         const {channel, last} = res.data;
 
         let lastchan = last;
@@ -162,6 +174,7 @@ const Friends = () => {
         setinserver(channel_id)
     }
     
+    // 서버에 친구초대
     const invserver = (e: React.MouseEvent<HTMLDivElement>, value: string) => {
         e.preventDefault();
         setUI(1)
@@ -169,20 +182,20 @@ const Friends = () => {
     }
 
     return <>
-        <UIBox op={UI} setop={setUI} servername={servername} setservername={setservername}></UIBox>
+        <UIBox op={UI} setop={setUI} servername={servername} setservername={setservername} setchannellist={setchannellist}></UIBox>
         <BackgroundB>
             <ServerList>
                 <ServerItem active={currentChatServer === null} onClick={() => {setCurrentChatServer(null); navigate('/friends')}}><ServerItemText>SC</ServerItemText></ServerItem>
-                {serverlist.map((value:string) => {
+                {serverlist.map((server) => {
                     return (
-                        <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} 
-                        onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
+                        <ServerItem active={currentChatServer === server.server_uuid} onContextMenu={(e) => {invserver(e, server.server_name)}} 
+                        onClick={() => {setCurrentChatServer(server.server_uuid); navigate('/chat')}}><AddServerText>{server.server_name}</AddServerText></ServerItem>
                     )
                 })}
                 <ServerItem active={false} onClick={() => setUI(2)}><AddServerText>+</AddServerText></ServerItem>
             </ServerList>
             <UserList>
-                <TitleBox><ServerTitle>{currentChatServer}</ServerTitle></TitleBox>
+                <TitleBox><ServerTitle>{serverlist.find(server => server.server_uuid === currentChatServer)?.server_name}</ServerTitle></TitleBox>
                 <ChatUserList>
                     <CreateInServer>
                         <AddInServerChat>채널 추가</AddInServerChat>
@@ -228,16 +241,12 @@ const Friends = () => {
             <InfoBox>
                 <InfoTop></InfoTop>
                 <InfoList>
-                    {
-                        userlist.map((value) => {
-                            return <>
-                                <InfoListBox>
-                                    <UserTitle></UserTitle>
-                                    <Name>{value}</Name>
-                                </InfoListBox>
-                            </>
-                        })
-                    }
+                    {userlist.map((value) => (
+                        <InfoListBox>
+                            <UserTitle></UserTitle>
+                            <Name>{value}</Name>
+                        </InfoListBox>
+                    ))}
                 </InfoList>
             </InfoBox>
         </BackgroundB>

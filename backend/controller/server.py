@@ -7,18 +7,16 @@ from db.redis import redis as redi
 import redis.asyncio
 
 async def firstconnection(uuid: str, db: AsyncSession = Depends(engine.get_db)):
-    room_id = await db.execute(select(model.Server.server_name)
+    room_id = await db.execute(select(model.Server.server_name, model.Server.server_uuid)
                 .join(model.Server_User, model.Server.server_uuid == model.Server_User.server_uuid)
                 .where(model.Server_User.user_uuid == uuid))
-    room_list = room_id.scalars().all()
-    return room_list
+    room_list = room_id.all()
+    return [row._asdict() for row in room_list]
 
 async def getinserver(user_uuid: str, server: str, db: AsyncSession = Depends(engine.get_db), rds: redis = Depends(redi.get_redis_client)):
     query_result = await db.execute(select(
-        model.Server_in_Server.channel_id, 
-        model.Server_in_Server.channel_uuid)
-        .join(model.Server, model.Server.server_uuid == model.Server_in_Server.server_uuid)
-        .where(model.Server.server_name == server))
+        model.Server_in_Server.channel_id, model.Server_in_Server.channel_uuid)
+        .where(model.Server_in_Server.server_uuid == server))
     result = query_result.all()
 
     key = f'user:channel:{user_uuid}'
@@ -64,14 +62,20 @@ async def addserver(uuid: str, servername: str, db: AsyncSession = Depends(engin
         return {"message" : "서버 오류", "active" : False}
     
 async def addchannel(server_name: str, channel_name: str, db: AsyncSession = Depends(engine.get_db)):
-    new_uuid = uuid4()
     try:
-        server_uuid = await db.execute(select(model.Server.server_uuid).where(model.Server.server_name == server_name))
-        suuid = server_uuid.scalar_one_or_none()
-        query = model.Server_in_Server(server_uuid=suuid, channel_id=channel_name, channel_uuid=new_uuid)
+        new_uuid = uuid4()
+        query = model.Server_in_Server(server_uuid=server_name, channel_id=channel_name, channel_uuid=new_uuid)
+
         db.add(query)
         await db.commit()
-        return {"message" : "성공", "active" : True, "channel_uuid" : new_uuid}
+        await db.refresh(query)
+
+        channel_list = await db.execute(
+            select(model.Server_in_Server.channel_id, model.Server_in_Server.channel_uuid)
+            .where(model.Server_in_Server.server_uuid == server_name)
+        )
+
+        return {"message" : "성공", "active" : True, "channel_uuid" : new_uuid, "channel_list" : [row._asdict() for row in channel_list]}
         
     except Exception as e:
         await db.rollback()
@@ -80,10 +84,8 @@ async def addchannel(server_name: str, channel_name: str, db: AsyncSession = Dep
 async def getuserlist(id: str, db: AsyncSession = Depends(engine.get_db)):
     try:
         state = await db.execute(select(model.User.id)
-        .select_from(model.Server)
-        .join(model.Server_User, model.Server.server_uuid == model.Server_User.server_uuid)
-        .join(model.User, model.Server_User.user_uuid == model.User.uuid)
-        .where(model.Server.server_name == id))
+            .join(model.Server_User.user_uuid == model.User.uuid)
+            .where(model.Server_User.server_uuid == id))
 
         slist = state.scalars().all()
         return slist

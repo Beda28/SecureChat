@@ -26,7 +26,10 @@ async def getchat(uuid: str, send_id: str, db: AsyncSession = Depends(engine.get
     result_list = await result.to_list()
     return {"result" : result_list, "uuid" : res}
 
-async def getserverchat(server_id: str):
+async def getserverchat(server_id: str, db:AsyncSession = Depends(engine.get_db)):
+    name = await db.execute(select(mm.Server_in_Server.channel_id).where(mm.Server_in_Server.channel_uuid == server_id))
+    server_name = name.scalar_one_or_none()
+    
     result = model.FriendMessage.find({model.FriendMessage.room_uuid : server_id})
     result_list = await result.to_list()
-    return {"result" : result_list, "uuid" : server_id}
+    return {"result" : result_list, "name" : server_name}

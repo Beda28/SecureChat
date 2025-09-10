@@ -12,8 +12,14 @@ import { useAppContext } from "../utils/appcontext"
 import { useNavigate } from "react-router-dom"
 import { InviteButton } from "../components/Button/Button"
 
-export const UIBox =  ({op, setop, servername, setservername}: 
-    {op: number, setop: React.Dispatch<React.SetStateAction<number>>, servername: string, setservername: React.Dispatch<React.SetStateAction<string>>}) => {
+interface ChannelList {
+    channel_id: string;
+    channel_uuid: string;
+}
+
+export const UIBox =  ({op, setop, servername, setservername, setchannellist}: 
+    {op: number, setop: React.Dispatch<React.SetStateAction<number>>, servername: string, 
+        setservername: React.Dispatch<React.SetStateAction<string>>, setchannellist:React.Dispatch<React.SetStateAction<ChannelList[]>>}) => {
     
     const [resultmessage, setresultmessage] = useState('');
     const [active, setactive] = useState<boolean>(false);
@@ -87,9 +93,14 @@ export const UIBox =  ({op, setop, servername, setservername}:
             if (res.data.active) {
                 setop(0); 
                 setservername(''); 
-                if (op == 2) setCurrentChatServer(servername);
-                else setchatserveruuid(res.data.channel_uuid); 
-
+                if (op == 2) {
+                    setCurrentChatServer(servername);
+                }
+                else {
+                    console.log(res.data)
+                    setchannellist(res.data.channel_list);
+                    setchatserveruuid(res.data.channel_uuid); 
+                }
                 return navigate('/chat');
             }
 

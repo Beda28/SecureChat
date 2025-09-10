@@ -17,6 +17,16 @@ import { InfoBox, InfoTop } from "../components/Box/Info"
 import { InfoList } from "../components/UL/List"
 import { UIBox } from "../middlepages/UIBox"
 
+interface ChannelList {
+    channel_id: string;
+    channel_uuid: string;
+}
+
+interface ServerList {
+    server_name: string;
+    server_uuid: string;
+}
+
 const Friends = () => {
     const [friend, setfriend] = useState("list")
     const [sayback, setsayback] = useState("")
@@ -24,9 +34,10 @@ const Friends = () => {
     const [focususer, setfocususer] = useState('')
     const navigate = useNavigate()
     const {currentChatServer, setCurrentChatServer} = useAppContext()
-    const [serverlist, setserverlist] = useState<string[]>([]);
+    const [serverlist, setserverlist] = useState<ServerList[]>([]);
     const [UI, setUI] = useState<number>(0);
     const [servername, setservername] = useState('');
+    const [, setchannellist] = useState<ChannelList[]>([]);
 
     const CheckToken = () => {
         if (!checkExp()) navigate('/')
@@ -56,10 +67,9 @@ const Friends = () => {
         const res = await axios.post('/api/friend/getlist', {
             user_id: getId('uuid')
         })
-
         if (res.data) setlistfriend(res.data)
     }
-
+    
     const serverList = async () => {
         const res = await axios.post('/api/server/get', {
             user_id: getId('uuid')
@@ -78,14 +88,14 @@ const Friends = () => {
     }
 
     return <>
-        <UIBox op={UI} setop={setUI} servername={servername} setservername={setservername}></UIBox>
+        <UIBox op={UI} setop={setUI} servername={servername} setservername={setservername} setchannellist={setchannellist}></UIBox>
         <BackgroundB>
             <ServerList>
                 <ServerItem active={currentChatServer === null} onClick={() => setCurrentChatServer(null)}><ServerItemText>SC</ServerItemText></ServerItem>
-                {serverlist.map((value:string) => {
+                {serverlist.map((server) => {
                     return (
-                        <ServerItem active={currentChatServer === value} onContextMenu={(e) => {invserver(e, value)}} 
-                       onClick={() => {setCurrentChatServer(value); navigate('/chat')}}><AddServerText>{value}</AddServerText></ServerItem>
+                        <ServerItem active={currentChatServer === server.server_uuid} onContextMenu={(e) => {invserver(e, server.server_name)}} 
+                       onClick={() => {setCurrentChatServer(server.server_uuid); navigate('/chat')}}><AddServerText>{server.server_name}</AddServerText></ServerItem>
                     )
                 })}
                 <ServerItem active={false} onClick={() => setUI(2)}><AddServerText>+</AddServerText></ServerItem>
